@@ -44,7 +44,7 @@ public final class SearchParameters {
     private final Long savingsId;
     private final Boolean orphansOnly;
 
-    // Provisioning Entries Search Params
+    // Provisning Entries Search Params
     private final Long provisioningEntryId;
     private final Long productId;
     private final Long categoryId;
