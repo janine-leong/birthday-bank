@@ -23,6 +23,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.MonthDay;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -180,7 +184,7 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
     @Override
     public Page<SavingsAccountData> retrieveAll(final SearchParameters searchParameters) {
-
+        System.out.println(">>> RETRIEVE ALL BIRTHDAY PARAM: " + searchParameters.getBirthday());
         final AppUser currentUser = this.context.authenticatedUser();
         final String hierarchy = currentUser.getOffice().getHierarchy();
         final String hierarchySearchString = hierarchy + "%";
@@ -188,13 +192,11 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
         final StringBuilder sqlBuilder = new StringBuilder(200);
         sqlBuilder.append("select " + sqlGenerator.calcFoundRows() + " ");
         sqlBuilder.append(this.savingAccountMapper.schema());
-
         sqlBuilder.append(" join m_office o on o.id = c.office_id");
         sqlBuilder.append(" where o.hierarchy like ?");
 
-        final Object[] objectArray = new Object[2];
-        objectArray[0] = hierarchySearchString;
-        int arrayPos = 1;
+        final List<Object> paramList = new ArrayList<>();
+        paramList.add(hierarchySearchString);
         if (searchParameters != null) {
             String sqlQueryCriteria = searchParameters.getSqlSearch();
             if (StringUtils.isNotBlank(sqlQueryCriteria)) {
@@ -205,14 +207,29 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
 
             if (StringUtils.isNotBlank(searchParameters.getExternalId())) {
                 sqlBuilder.append(" and sa.external_id = ?");
-                objectArray[arrayPos] = searchParameters.getExternalId();
-                arrayPos = arrayPos + 1;
+                paramList.add(searchParameters.getExternalId());
             }
             if (searchParameters.getOfficeId() != null) {
-                sqlBuilder.append("and c.office_id =?");
-                objectArray[arrayPos] = searchParameters.getOfficeId();
-                arrayPos = arrayPos + 1;
+                sqlBuilder.append(" and c.office_id = ?");
+                paramList.add(searchParameters.getOfficeId());
             }
+
+            if (StringUtils.isNotBlank(searchParameters.getBirthday())) {
+                try {
+                    final DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                            .parseCaseInsensitive()
+                            .appendPattern("[MMMM dd][MMMM d][dd MMMM][d MMMM][MM/dd][dd/MM]")
+                            .toFormatter(Locale.US);
+                    final MonthDay monthDay = MonthDay.parse(searchParameters.getBirthday().trim(), formatter);
+                    sqlBuilder.append(" and DAY(c.date_of_birth) = ? and MONTH(c.date_of_birth) = ?");
+                    paramList.add(monthDay.getDayOfMonth());
+                    paramList.add(monthDay.getMonthValue());
+                } catch (Exception e) {
+                    sqlBuilder.append(" and 1 = 0");
+                }
+            }
+
+
             if (searchParameters.isOrderByRequested()) {
                 sqlBuilder.append(" order by ").append(searchParameters.getOrderBy());
                 this.columnValidator.validateSqlInjection(sqlBuilder.toString(), searchParameters.getOrderBy());
@@ -232,8 +249,9 @@ public class SavingsAccountReadPlatformServiceImpl implements SavingsAccountRead
                 }
             }
         }
-        final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
-        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), finalObjectArray, this.savingAccountMapper);
+        // final Object[] finalObjectArray = Arrays.copyOf(objectArray, arrayPos);
+        // return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), finalObjectArray, this.savingAccountMapper);
+        return this.paginationHelper.fetchPage(this.jdbcTemplate, sqlBuilder.toString(), paramList.toArray(), this.savingAccountMapper);
     }
 
     @Override

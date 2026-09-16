@@ -113,7 +113,8 @@ public class SavingsAccountsApiResource {
         final ApiRequestJsonSerializationSettings settings = apiRequestParameterHelper.process(uriInfo.getQueryParameters());
         return toApiJsonSerializer.serialize(settings, savingsAccount, SavingsApiSetConstants.SAVINGS_ACCOUNT_RESPONSE_DATA_PARAMETERS);
     }
-
+    
+    // https://localhost:8443/fineract-provider/api/v1/savingsaccounts?tenantIdentifier=default
     @GET
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
@@ -128,11 +129,12 @@ public class SavingsAccountsApiResource {
             @QueryParam("offset") @Parameter(description = "offset") final Integer offset,
             @QueryParam("limit") @Parameter(description = "limit") final Integer limit,
             @QueryParam("orderBy") @Parameter(description = "orderBy") final String orderBy,
-            @QueryParam("sortOrder") @Parameter(description = "sortOrder") final String sortOrder) {
+            @QueryParam("sortOrder") @Parameter(description = "sortOrder") final String sortOrder,
+            @QueryParam("birthday") @Parameter(description = "birthday") final String birthday ) {
 
         context.authenticatedUser().validateHasReadPermission(SavingsApiConstants.SAVINGS_ACCOUNT_RESOURCE_NAME);
 
-        final SearchParameters searchParameters = SearchParameters.forSavings(sqlSearch, externalId, offset, limit, orderBy, sortOrder);
+        final SearchParameters searchParameters = SearchParameters.forSavings(sqlSearch, externalId, offset, limit, orderBy, sortOrder, birthday);
 
         final Page<SavingsAccountData> products = savingsAccountReadPlatformService.retrieveAll(searchParameters);
 

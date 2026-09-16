@@ -70,5 +70,5 @@ public class SavingsApiSetConstants extends SavingsApiConstants {
                     amountOutstandingParamName, amountOrPercentageParamName, amountParamName, amountPaidParamName, chargeOptionsParamName));
 
     protected static final Set<String> SAVINGS_ACCOUNT_ON_HOLD_RESPONSE_DATA_PARAMETERS = new HashSet<>(Arrays.asList(idParamName,
-            amountParamName, onHoldTransactionTypeParamName, onHoldTransactionDateParamName, onHoldReversedParamName));
+            amountParamName, onHoldTransactionTypeParamName, onHoldTransactionDateParamName, onHoldReversedParamName, "birthday"));
 }
